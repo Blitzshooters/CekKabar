@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CekKabar</string>
+    <string name="widget_description">Ringkasan deteksi hoaks &amp; akses cepat pemeriksaan berita CekKabar</string>
 </resources>

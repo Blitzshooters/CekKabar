@@ -36,8 +36,9 @@ class AppContainer(context: Context) {
         .build()
 
     private val api: CekKabarApi = retrofit.create(CekKabarApi::class.java)
-    private val keystoreManager = KeystoreManager(context.applicationContext)
-    private val localHistoryDatabase = LocalHistoryDatabase(context.applicationContext, keystoreManager)
+    private val appContext = context.applicationContext
+    private val keystoreManager = KeystoreManager(appContext)
+    private val localHistoryDatabase = LocalHistoryDatabase(appContext, keystoreManager)
 
-    val repository: CekKabarRepository = CekKabarRepository(api, localHistoryDatabase)
+    val repository: CekKabarRepository = CekKabarRepository(api, localHistoryDatabase, appContext)
 }

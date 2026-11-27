@@ -1,5 +1,6 @@
 package com.tanilink.cekkabar.data.repository
 
+import android.content.Context
 import com.tanilink.cekkabar.data.local.LocalHistoryDatabase
 import com.tanilink.cekkabar.data.model.AnalysisResponse
 import com.tanilink.cekkabar.data.model.DetectRequest
@@ -9,15 +10,21 @@ import com.tanilink.cekkabar.data.model.ExampleNewsItem
 import com.tanilink.cekkabar.data.model.HistoryListResponse
 import com.tanilink.cekkabar.data.model.WordCloudResponse
 import com.tanilink.cekkabar.data.remote.CekKabarApi
+import com.tanilink.cekkabar.widget.CekKabarWidgetProvider
 
 class CekKabarRepository(
     private val api: CekKabarApi,
-    private val localDb: LocalHistoryDatabase
+    private val localDb: LocalHistoryDatabase,
+    private val appContext: Context? = null
 ) {
+
+    fun getLocalSnapshot(filter: String = "all"): HistoryListResponse =
+        localDb.getHistories(filter = filter)
 
     suspend fun detectHoax(text: String): Result<DetectResponse> = runCatching {
         val result = api.detectHoax(DetectRequest(text = text))
         localDb.saveDetection(result)
+        appContext?.let { CekKabarWidgetProvider.refreshAllWidgets(it) }
         result
     }
 
@@ -58,12 +65,14 @@ class CekKabarRepository(
 
     suspend fun deleteHistory(id: Long): Result<Unit> = runCatching {
         localDb.deleteHistory(id)
+        appContext?.let { CekKabarWidgetProvider.refreshAllWidgets(it) }
         runCatching { api.deleteHistory(id) }
         Unit
     }
 
     suspend fun clearHistories(): Result<Unit> = runCatching {
         localDb.clearHistories()
+        appContext?.let { CekKabarWidgetProvider.refreshAllWidgets(it) }
         runCatching { api.clearHistories() }
         Unit
     }

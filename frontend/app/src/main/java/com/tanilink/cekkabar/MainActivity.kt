@@ -1,5 +1,6 @@
 package com.tanilink.cekkabar
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,10 +19,14 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -57,8 +62,14 @@ enum class BottomNavTab(
 }
 
 class MainActivity : ComponentActivity() {
+
+    private var requestedTab by mutableStateOf<String?>(null)
+    private var autoPasteRequestId by mutableStateOf(0)
+    private var requestedHistoryId by mutableStateOf<Long?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleWidgetIntent(intent)
         enableEdgeToEdge()
         val app = application as CekKabarApp
         setContent {
@@ -66,18 +77,100 @@ class MainActivity : ComponentActivity() {
                 val vm: CekKabarViewModel = viewModel(
                     factory = CekKabarViewModel.provideFactory(app.container.repository)
                 )
-                CekKabarRoot(viewModel = vm)
+                CekKabarRoot(
+                    viewModel = vm,
+                    requestedTab = requestedTab,
+                    autoPasteRequestId = autoPasteRequestId,
+                    requestedHistoryId = requestedHistoryId,
+                    onConsumeRequestedTab = { requestedTab = null },
+                    onConsumeHistoryId = { requestedHistoryId = null }
+                )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleWidgetIntent(intent)
+    }
+
+    private fun handleWidgetIntent(intent: Intent?) {
+        if (intent == null) return
+        val historyId = intent.getLongExtra(
+            com.tanilink.cekkabar.widget.CekKabarWidgetProvider.EXTRA_HISTORY_ID,
+            -1L
+        )
+        if (historyId > 0L) {
+            requestedHistoryId = historyId
+            return
+        }
+        requestedTab = intent.getStringExtra(
+            com.tanilink.cekkabar.widget.CekKabarWidgetProvider.EXTRA_START_TAB
+        )
+        if (intent.getBooleanExtra(
+                com.tanilink.cekkabar.widget.CekKabarWidgetProvider.EXTRA_AUTO_PASTE,
+                false
+            )
+        ) {
+            autoPasteRequestId++
         }
     }
 }
 
 @Composable
-fun CekKabarRoot(viewModel: CekKabarViewModel) {
+fun CekKabarRoot(
+    viewModel: CekKabarViewModel,
+    requestedTab: String? = null,
+    autoPasteRequestId: Int = 0,
+    requestedHistoryId: Long? = null,
+    onConsumeRequestedTab: () -> Unit = {},
+    onConsumeHistoryId: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val uiState by viewModel.uiState.collectAsState()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val clipboardManager = LocalClipboardManager.current
+
+    LaunchedEffect(requestedTab) {
+        if (!requestedTab.isNullOrBlank()) {
+            val targetRoute = BottomNavTab.entries.find { it.route == requestedTab }?.route
+            if (targetRoute != null) {
+                navController.navigate(targetRoute) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+            onConsumeRequestedTab()
+        }
+    }
+
+    LaunchedEffect(autoPasteRequestId) {
+        if (autoPasteRequestId > 0) {
+            val pasted = clipboardManager.getText()?.text?.trim().orEmpty()
+            if (pasted.isNotEmpty()) {
+                viewModel.onInputTextChanged(pasted)
+                if (pasted.length >= 10) {
+                    viewModel.detectNews(textOverride = pasted) {
+                        navController.navigate("hasil")
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(requestedHistoryId) {
+        val id = requestedHistoryId
+        if (id != null && id > 0L) {
+            viewModel.openHistoryDetail(id) {
+                navController.navigate("hasil")
+            }
+            onConsumeHistoryId()
+        }
+    }
 
     val showBottomBar = currentRoute != "hasil"
 
