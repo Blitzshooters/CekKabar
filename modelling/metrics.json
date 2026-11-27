@@ -1,0 +1,32 @@
+{
+  "accuracy": 0.9649,
+  "precision": 0.985,
+  "recall": 0.9441,
+  "f1_score": 0.9641,
+  "cv_f1_mean": 0.9668,
+  "cv_f1_std": 0.0021,
+  "cv_f1_per_fold": [
+    0.9657,
+    0.9704,
+    0.9664,
+    0.9673,
+    0.964
+  ],
+  "confusion_matrix": [
+    [
+      2330,
+      34
+    ],
+    [
+      132,
+      2231
+    ]
+  ],
+  "n_train": 18905,
+  "n_test": 4727,
+  "n_vocab": 20000,
+  "class_names": [
+    "Fakta (0)",
+    "Hoaks (1)"
+  ]
+}

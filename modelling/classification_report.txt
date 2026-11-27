@@ -1,0 +1,22 @@
+CekKabar – Hoax Detector
+Model: TF-IDF (max_features=20000, ngram=(1,2)) + MultinomialNB (alpha=1.0)
+
+Train size : 18905
+Test  size : 4727
+Vocab size : 20000
+
+              precision    recall  f1-score   support
+
+       Fakta       0.95      0.99      0.97      2364
+       Hoaks       0.98      0.94      0.96      2363
+
+    accuracy                           0.96      4727
+   macro avg       0.97      0.96      0.96      4727
+weighted avg       0.97      0.96      0.96      4727
+
+Confusion Matrix:
+[[2330   34]
+ [ 132 2231]]
+
+5-Fold CV F1 : 0.9668 ± 0.0021
+Per-fold     : [0.9657, 0.9704, 0.9664, 0.9673, 0.964]
