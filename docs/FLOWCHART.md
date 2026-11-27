@@ -416,3 +416,4 @@ flowchart LR
 > - `backend/app/Http/Controllers/Api/HoaxController.php` — REST endpoints
 > - `modelling/train_model.py` — pipeline ML training
 > - `backend/ml/infer.py` — runtime inference
+
