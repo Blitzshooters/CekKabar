@@ -19,10 +19,8 @@ desktop.ini
 # =============================================================
 modelling/__pycache__/
 modelling/*.pyc
-modelling/model_nb.pkl          # Binary model – release via GitHub Releases
 modelling/venv/
 modelling/.env
-*.pkl
 
 # =============================================================
 # DOCS
