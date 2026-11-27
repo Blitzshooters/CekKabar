@@ -22,6 +22,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -103,7 +105,15 @@ fun CekKabarRoot(viewModel: CekKabarViewModel) {
                                     contentDescription = tab.label
                                 )
                             },
-                            label = { Text(text = tab.label) },
+                            label = {
+                                Text(
+                                    text = tab.label,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 11.sp
+                                )
+                            },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = IndigoPrimary,
                                 selectedTextColor = IndigoPrimary,
@@ -173,12 +183,16 @@ fun CekKabarRoot(viewModel: CekKabarViewModel) {
                 WordCloudScreen(
                     uiState = uiState,
                     onSwitchCorpus = viewModel::switchWordCloudCorpus,
-                    onQueryChanged = viewModel::onWordCloudQueryChanged
+                    onQueryChanged = viewModel::onWordCloudQueryChanged,
+                    onRetry = { viewModel.loadWordCloud() }
                 )
             }
 
             composable(BottomNavTab.EVALUASI.route) {
-                EvaluasiScreen(uiState = uiState)
+                EvaluasiScreen(
+                    uiState = uiState,
+                    onRetry = viewModel::loadEvaluation
+                )
             }
 
             composable(BottomNavTab.RIWAYAT.route) {

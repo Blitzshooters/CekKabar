@@ -33,7 +33,7 @@ class HoaxInferenceService
     public function getWordCloud(string $corpus = 'hoaks', string $query = ''): array
     {
         $corpus = in_array($corpus, ['hoaks', 'fakta'], true) ? $corpus : 'hoaks';
-        $cacheKey = 'cekkabar_wc_v1_' . $corpus . '_' . md5($query);
+        $cacheKey = 'cekkabar_wc_v2_' . $corpus . '_' . md5($query);
 
         return Cache::remember($cacheKey, 1800, function () use ($corpus, $query) {
             $args = ['wordcloud', $corpus];
@@ -54,7 +54,25 @@ class HoaxInferenceService
     private function runPython(array $args, ?string $stdin = null): array
     {
         $command = array_merge([$this->pythonBin, $this->scriptPath], $args);
-        $process = new Process($command, base_path(), null, $stdin, 60);
+
+        // Pass essential Windows environment variables so Python subprocess
+        // can load Winsock/asyncio correctly when called from PHP web server.
+        $env = array_merge($_ENV, [
+            'PYTHONUNBUFFERED' => '1',
+            'PYTHONDONTWRITEBYTECODE' => '1',
+            'PYTHONIOENCODING' => 'utf-8',
+            'SystemRoot'   => env('SystemRoot', 'C:\\Windows'),
+            'SystemDrive'  => env('SystemDrive', 'C:'),
+            'TEMP'         => env('TEMP', sys_get_temp_dir()),
+            'TMP'          => env('TMP', sys_get_temp_dir()),
+            'PATH'         => env('PATH', ''),
+            'USERPROFILE'  => env('USERPROFILE', ''),
+            'APPDATA'      => env('APPDATA', ''),
+            'LOCALAPPDATA' => env('LOCALAPPDATA', ''),
+            'WINDIR'       => env('WINDIR', 'C:\\Windows'),
+        ]);
+
+        $process = new Process($command, base_path(), $env, $stdin, 60);
         $process->run();
 
         if (! $process->isSuccessful()) {

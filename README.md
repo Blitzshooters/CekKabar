@@ -73,3 +73,4 @@ Buka folder `frontend/` di Android Studio, lalu build & run.
 ## Lisensi
 
 MIT
+

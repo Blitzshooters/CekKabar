@@ -197,11 +197,13 @@ def handle_wordcloud(corpus: str = "hoaks", query: str = "") -> dict:
         df_uni = df_uni[df_uni["kata"].astype(str).str.contains(query.lower(), regex=False)]
 
     if corpus == "fakta":
-        subset = df_uni.sort_values("kontribusi_hoaks", ascending=True).head(30)
+        df_corpus = df_uni[df_uni["kontribusi_hoaks"] < 0]
+        subset = df_corpus.sort_values("kontribusi_hoaks", ascending=True).head(30)
         scores = [abs(float(s)) for s in subset["kontribusi_hoaks"]]
     else:
-        subset = df_uni.sort_values("kontribusi_hoaks", ascending=False).head(30)
-        scores = [max(0.0, float(s)) for s in subset["kontribusi_hoaks"]]
+        df_corpus = df_uni[df_uni["kontribusi_hoaks"] > 0]
+        subset = df_corpus.sort_values("kontribusi_hoaks", ascending=False).head(30)
+        scores = [float(s) for s in subset["kontribusi_hoaks"]]
 
     max_s = max(scores) if scores else 1.0
     min_s = min(scores) if scores else 0.0

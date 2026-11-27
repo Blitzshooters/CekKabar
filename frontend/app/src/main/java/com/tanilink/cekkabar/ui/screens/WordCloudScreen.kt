@@ -1,5 +1,6 @@
 package com.tanilink.cekkabar.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.tanilink.cekkabar.data.model.WordCloudItem
 import com.tanilink.cekkabar.ui.components.CekKabarTopBar
 import com.tanilink.cekkabar.ui.components.EditorialCard
+import com.tanilink.cekkabar.ui.components.ErrorRetryCard
 import com.tanilink.cekkabar.ui.theme.FactGreen
 import com.tanilink.cekkabar.ui.theme.FactGreenContainer
 import com.tanilink.cekkabar.ui.theme.HoaxRed
@@ -69,8 +73,14 @@ fun WordCloudScreen(
     uiState: CekKabarUiState,
     onSwitchCorpus: (String) -> Unit,
     onQueryChanged: (String) -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LaunchedEffect(Unit) {
+        if (uiState.wordCloud == null && !uiState.isLoadingWordCloud) {
+            onRetry()
+        }
+    }
     val isHoaxCorpus = uiState.wordCloudCorpus == "hoaks"
     val accentColor = if (isHoaxCorpus) HoaxRed else FactGreen
     val containerTint = if (isHoaxCorpus) HoaxRedContainer else FactGreenContainer
@@ -147,9 +157,19 @@ fun WordCloudScreen(
                 }
             } else if (wc != null) {
                 // WordCloud Visual Card
-                EditorialCard(cornerRadius = 22.dp) {
+                val topGlow = if (isHoaxCorpus) Color(0xFFFFF3F4) else Color(0xFFF1FBF5)
+                val deepAccent = if (isHoaxCorpus) Color(0xFF8C0D1D) else Color(0xFF146C3B)
+
+                EditorialCard(cornerRadius = 24.dp) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(topGlow, SurfaceWhite)
+                                )
+                            )
+                            .padding(horizontal = 16.dp, vertical = 18.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (wc.words.isEmpty()) {
@@ -160,49 +180,92 @@ fun WordCloudScreen(
                                 modifier = Modifier.padding(vertical = 32.dp)
                             )
                         } else {
+                            val cloudItems = remember(wc.words) {
+                                interleaveCloudWords(wc.words.take(20))
+                            }
                             FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 8.dp)
                             ) {
-                                wc.words.take(24).forEachIndexed { index, item ->
-                                    val fontSize = (13f + item.weight.toFloat() * 14f).sp
-                                    val isHighlight = index < 6
-                                    val chipColor = if (isHighlight) containerTint else SurfaceContainerLow
+                                cloudItems.forEach { (rank, item) ->
+                                    val isSelected = tappedWord?.word == item.word
+                                    val isPill = rank in setOf(10, 12, 16)
+                                    val displayWord = when {
+                                        rank in 0..3 -> item.word.uppercase()
+                                        else -> item.word.replaceFirstChar { it.uppercase() }
+                                    }
+                                    val fontSize = when (rank) {
+                                        0 -> 28.sp
+                                        1 -> 25.sp
+                                        2 -> 23.sp
+                                        3 -> 26.sp
+                                        in 4..6 -> 18.sp
+                                        in 7..9 -> 16.sp
+                                        in 10..13 -> 14.sp
+                                        else -> 13.sp
+                                    }
+                                    val fontWeight = when (rank) {
+                                        in 0..3 -> FontWeight.Black
+                                        in 4..7 -> FontWeight.Bold
+                                        in 8..14 -> FontWeight.SemiBold
+                                        else -> FontWeight.Medium
+                                    }
                                     val textColor = when {
-                                        index < 3 -> accentColor
-                                        isHighlight -> onContainerTint
-                                        else -> OnSurfaceDark
+                                        isSelected -> IndigoPrimary
+                                        rank in 0..3 -> deepAccent
+                                        rank in setOf(4, 7, 11) -> accentColor
+                                        rank in setOf(14, 15) -> IndigoPrimary
+                                        rank in setOf(5, 6, 8, 9) -> OnSurfaceDark
+                                        else -> OnSurfaceVariant
                                     }
 
-                                    Surface(
-                                        color = chipColor,
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.clickable { tappedWord = item }
-                                    ) {
+                                    if (isPill || isSelected) {
+                                        Surface(
+                                            color = if (isSelected) PrimaryContainer else Color(0xFFF0F2FA),
+                                            shape = RoundedCornerShape(999.dp),
+                                            border = if (isSelected) BorderStroke(1.dp, IndigoPrimary) else null,
+                                            modifier = Modifier
+                                                .align(Alignment.CenterVertically)
+                                                .clip(RoundedCornerShape(999.dp))
+                                                .clickable { tappedWord = item }
+                                        ) {
+                                            Text(
+                                                text = displayWord,
+                                                fontSize = if (isSelected) fontSize else 13.sp,
+                                                fontWeight = fontWeight,
+                                                color = textColor,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                                            )
+                                        }
+                                    } else {
                                         Text(
-                                            text = if (index < 2) item.word.uppercase() else item.word,
+                                            text = displayWord,
                                             fontSize = fontSize,
-                                            fontWeight = if (index < 5) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                            fontWeight = fontWeight,
                                             color = textColor,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                            modifier = Modifier
+                                                .align(Alignment.CenterVertically)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { tappedWord = item }
+                                                .padding(horizontal = 4.dp, vertical = 2.dp)
                                         )
                                     }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         Surface(
-                            color = SurfaceContainerLow,
-                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF3F5FC),
+                            shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -211,7 +274,7 @@ fun WordCloudScreen(
                                     tint = IndigoPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = tappedWord?.let {
                                         "Kata \"${it.word}\" memiliki skor log-odds ${it.score} pada korpus ${wc.corpus.uppercase()}."
@@ -380,6 +443,12 @@ fun WordCloudScreen(
                         }
                     }
                 }
+            } else {
+                ErrorRetryCard(
+                    title = "Data Awan Kata Belum Tersedia",
+                    message = uiState.wordCloudError ?: "Pastikan server backend aktif dan terhubung ke jaringan WiFi yang sama.",
+                    onRetry = onRetry
+                )
             }
         }
     }
@@ -447,5 +516,21 @@ private fun WcStatTile(
             )
         }
     }
+}
+
+private fun interleaveCloudWords(words: List<WordCloudItem>): List<Pair<Int, WordCloudItem>> {
+    val order = listOf(0, 6, 1, 8, 12, 2, 7, 14, 10, 3, 9, 5, 13, 4, 15, 17, 11, 18, 16, 19)
+    val result = mutableListOf<Pair<Int, WordCloudItem>>()
+    val used = mutableSetOf<Int>()
+    for (idx in order) {
+        if (idx < words.size) {
+            result.add(idx to words[idx])
+            used.add(idx)
+        }
+    }
+    words.forEachIndexed { idx, item ->
+        if (idx !in used) result.add(idx to item)
+    }
+    return result
 }
 

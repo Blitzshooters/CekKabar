@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tanilink.cekkabar.ui.components.CekKabarTopBar
 import com.tanilink.cekkabar.ui.components.EditorialCard
+import com.tanilink.cekkabar.ui.components.ErrorRetryCard
 import com.tanilink.cekkabar.ui.components.MetricRingCard
 import com.tanilink.cekkabar.ui.theme.FactGreen
 import com.tanilink.cekkabar.ui.theme.FactGreenContainer
@@ -52,8 +54,14 @@ import com.tanilink.cekkabar.ui.viewmodel.CekKabarUiState
 @Composable
 fun EvaluasiScreen(
     uiState: CekKabarUiState,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LaunchedEffect(Unit) {
+        if (uiState.evaluation == null && !uiState.isLoadingEvaluation) {
+            onRetry()
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -361,6 +369,12 @@ fun EvaluasiScreen(
                         }
                     }
                 }
+            } else {
+                ErrorRetryCard(
+                    title = "Data Evaluasi Belum Tersedia",
+                    message = uiState.evaluationError ?: "Pastikan server backend aktif dan terhubung ke jaringan WiFi yang sama.",
+                    onRetry = onRetry
+                )
             }
         }
     }

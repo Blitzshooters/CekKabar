@@ -33,12 +33,14 @@ data class CekKabarUiState(
     // Tab WordCloud
     val wordCloud: WordCloudResponse? = null,
     val isLoadingWordCloud: Boolean = false,
+    val wordCloudError: String? = null,
     val wordCloudCorpus: String = "hoaks",
     val wordCloudQuery: String = "",
 
     // Tab Evaluasi
     val evaluation: EvaluationResponse? = null,
     val isLoadingEvaluation: Boolean = false,
+    val evaluationError: String? = null,
 
     // Tab Riwayat
     val histories: List<HistoryItem> = emptyList(),
@@ -167,26 +169,48 @@ class CekKabarViewModel(
         query: String = _uiState.value.wordCloudQuery
     ) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingWordCloud = true) }
+            _uiState.update { it.copy(isLoadingWordCloud = true, wordCloudError = null) }
             repository.getWordCloud(corpus, query)
                 .onSuccess { wc ->
-                    _uiState.update { it.copy(wordCloud = wc, isLoadingWordCloud = false) }
+                    _uiState.update {
+                        it.copy(
+                            wordCloud = wc,
+                            isLoadingWordCloud = false,
+                            wordCloudError = null
+                        )
+                    }
                 }
-                .onFailure {
-                    _uiState.update { it.copy(isLoadingWordCloud = false) }
+                .onFailure { err ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingWordCloud = false,
+                            wordCloudError = err.message ?: "Gagal memuat data awan kata."
+                        )
+                    }
                 }
         }
     }
 
     fun loadEvaluation() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingEvaluation = true) }
+            _uiState.update { it.copy(isLoadingEvaluation = true, evaluationError = null) }
             repository.getEvaluation()
                 .onSuccess { ev ->
-                    _uiState.update { it.copy(evaluation = ev, isLoadingEvaluation = false) }
+                    _uiState.update {
+                        it.copy(
+                            evaluation = ev,
+                            isLoadingEvaluation = false,
+                            evaluationError = null
+                        )
+                    }
                 }
-                .onFailure {
-                    _uiState.update { it.copy(isLoadingEvaluation = false) }
+                .onFailure { err ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingEvaluation = false,
+                            evaluationError = err.message ?: "Gagal memuat data evaluasi model."
+                        )
+                    }
                 }
         }
     }

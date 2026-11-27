@@ -16,12 +16,20 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8000/api/v1/\"")
+        // BASE_URL di-override per buildType di bawah
     }
 
     buildTypes {
+        debug {
+            // HP fisik via WiFi — IP komputer di jaringan lokal
+            buildConfigField("String", "BASE_URL", "\"http://192.168.1.7:8000/api/v1/\"")
+            // Jika pakai Emulator Android Studio, ganti ke:
+            // buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8000/api/v1/\"")
+        }
         release {
-            isMinifyEnabled = false
+            // Ganti dengan URL server produksi saat deploy
+            buildConfigField("String", "BASE_URL", "\"https://api.cekkabar.com/api/v1/\"")
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

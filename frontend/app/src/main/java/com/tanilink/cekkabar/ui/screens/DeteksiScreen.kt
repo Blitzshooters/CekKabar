@@ -184,18 +184,24 @@ fun DeteksiScreen(
                             style = MaterialTheme.typography.titleSmall,
                             color = OnSurfaceDark
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Surface(
                                 color = PrimaryContainer,
                                 shape = RoundedCornerShape(999.dp),
-                                modifier = Modifier.clickable {
-                                    clipboardManager.getText()?.text?.let { pasted ->
-                                        onInputChanged(pasted)
+                                modifier = Modifier
+                                    .height(32.dp)
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .clickable {
+                                        clipboardManager.getText()?.text?.let { pasted ->
+                                            onInputChanged(pasted)
+                                        }
                                     }
-                                }
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
@@ -204,7 +210,7 @@ fun DeteksiScreen(
                                         tint = IndigoPrimary,
                                         modifier = Modifier.size(14.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(5.dp))
                                     Text(
                                         text = "Tempel",
                                         style = MaterialTheme.typography.labelMedium,
@@ -213,20 +219,22 @@ fun DeteksiScreen(
                                 }
                             }
                             if (uiState.inputText.isNotEmpty()) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                IconButton(
-                                    onClick = onClearInput,
+                                Surface(
+                                    color = SurfaceContainerHigh,
+                                    shape = RoundedCornerShape(999.dp),
                                     modifier = Modifier
                                         .size(32.dp)
                                         .clip(RoundedCornerShape(999.dp))
-                                        .background(SurfaceContainerHigh)
+                                        .clickable { onClearInput() }
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Close,
-                                        contentDescription = "Hapus",
-                                        tint = OnSurfaceVariant,
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Close,
+                                            contentDescription = "Hapus",
+                                            tint = OnSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
